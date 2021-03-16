@@ -28,7 +28,7 @@ class JSAPI_PDF {
 		JSAPI_PDF() : x(0), y(0), pageNumber(0), pageHeight(0), pageWidth(0), errorNumber(0), errorDetailNumber(0)
 		{
 			/*
-				I think what needs to be done is to pass this instance to HPDF_NEW as the user_data paraeter.
+				I think what needs to be done is to pass this instance to HPDF_NEW as the user_data parameter.
 				The error_handler will be a top-level non-member function which receives user_data and can then call
 				user_data->handleError().
 			*/
@@ -49,6 +49,13 @@ class JSAPI_PDF {
 			HPDF_Page_SetFontAndSize (pdf->cur_page, font, 20);
 		}
 
+		void fillText(std::string text, int x, int y)
+		{
+			HPDF_Page_BeginText(pdf->cur_page);
+			HPDF_Page_TextOut(pdf->cur_page, x, y, whole.c_str());
+			HPDF_Page_EndText(pdf->cur_page);
+		}
+
 		emscripten::val save()
 		{
 			HPDF_UINT streamSize;
@@ -57,6 +64,9 @@ class JSAPI_PDF {
 			HPDF_SaveToStream(pdf);
 
 			streamSize = pdf->stream->size_fn(pdf->stream);
+
+			buf = (HPDF_BYTE *)HPDF_GetMem(pdf->mmgr, streamSize);
+
 			pdf->stream->read_fn(pdf->stream, buf, &streamSize);
 
 			// Stolen from squoosh, like the rest of it.
@@ -89,5 +99,6 @@ EMSCRIPTEN_BINDINGS(libharu_wasm) {
 	emscripten::class_<JSAPI_PDF>("JSAPI_PDF")
 		.constructor<>()
 		.function("addPage", &JSAPI_PDF::addPage)
+		.function("fillText", &JSAPI_PDF::fillText)
 		.function("save", &JSAPI_PDF::save);
 }
